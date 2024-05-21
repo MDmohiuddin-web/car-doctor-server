@@ -1,18 +1,19 @@
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
-const { MongoClient, ServerApiVersion } = require('mongodb');
-const app=express();
+const express = require("express");
+const cors = require("cors");
+require("dotenv").config();
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const app = express();
 
-const port= process.env.PORT || 3000;
-
+const port = process.env.PORT || 3000;
 
 //middleware
 app.use(cors());
 app.use(express.json());
 
 // ************* mongodb code start ***********//
-console.log(`server DB_username = ${process.env.DB_username} server DB_password = ${process.env.DB_password}` );
+console.log(
+  `server DB_username = ${process.env.DB_username} server DB_password = ${process.env.DB_password}`
+);
 // const uri = "mongodb+srv://car-Docter:kgF3fXhIVnrfHUVZ@cluster0.cg8xo0z.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 const uri = `mongodb+srv://${process.env.DB_username}:${process.env.DB_password}@cluster0.cg8xo0z.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -22,7 +23,7 @@ const client = new MongoClient(uri, {
     version: ServerApiVersion.v1,
     strict: true,
     deprecationErrors: true,
-  }
+  },
 });
 
 async function run() {
@@ -32,14 +33,30 @@ async function run() {
     //serviceCollection data base name is Car-Doctor
     const serviceCollection = client.db("Car-Doctor").collection("services");
 
-    app.get('/services', async (req, res) => {
-        const result = await serviceCollection.find().toArray();
-        res.send(result);
+    app.get("/services", async (req, res) => {
+      const result = await serviceCollection.find().toArray();
+      res.send(result);
     });
 
-    // Send a ping to confirm a successful connection
+    app.get("/services/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+
+      const options = {
+        // Sort matched documents in descending order by rating
+        // sort: { "imdb.rating": -1 },
+        // Include only the `title` and `imdb` fields in the returned document
+        projection: { service_id: 1, title: 1, price: 1 },
+      };
+      const result = await serviceCollection.findOne(query, options);
+      res.send(result );
+    });
+
+    // Send a ping to confirm a successful connection 
     await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    console.log( 
+      "Pinged your deployment. You successfully connected to MongoDB!"
+    );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
@@ -48,15 +65,10 @@ async function run() {
 run().catch(console.dir);
 // *********mongodb code end  *********//
 
-
-
-
-
-
-app.get('/', (req, res) => {
-    res.send('Hello World! from server');
+app.get("/", (req, res) => {
+  res.send("Hello World! from server");
 });
 
 app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+  console.log(`Server is running on port ${port}`);
 });
