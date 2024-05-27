@@ -32,7 +32,9 @@ async function run() {
     await client.connect();
     //serviceCollection data base name is Car-Doctor
     const serviceCollection = client.db("Car-Doctor").collection("services");
-    const BookServiceCollection = client.db("Car-Doctor").collection("bookings");
+    const BookServiceCollection = client
+      .db("Car-Doctor")
+      .collection("bookings");
 
     app.get("/services", async (req, res) => {
       const result = await serviceCollection.find().toArray();
@@ -54,26 +56,58 @@ async function run() {
     });
 
     //BookingService
-    app.post('/bookings', async (req, res) => {
+
+    app.post("/bookings", async (req, res) => {
       const booking = req.body;
       console.log(booking);
       const result = await BookServiceCollection.insertOne(booking);
       res.send(result);
     });
-    // app.get("/bookings/:id", async (req, res) => {
-    //   const id = req.params.id;
-    //   const query = { _id: new ObjectId(id) };
 
-    //   const options = {
-    //     // Sort matched documents in descending order by rating
-    //     // sort: { "imdb.rating": -1 },
-    //     // Include only the `title` and `imdb` fields in the returned document
-    //     projection: { service_id: 1, title: 1, price: 1, img: 1 },
-    //   };
-    //   const result = await serviceCollection.findOne(query, options);
-    //   res.send(result);
-    // });
+    app.get("/bookings", async (req, res) => {
+      console.log(req.query.email);
+      let query = {};
+      if (req.query?.email) {
+        query = {
+          email: req.query.email,
+        };
+      }
+      const result = await BookServiceCollection.find().toArray();
+      res.send(result);
+    });
 
+    app.get("/bookings/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await BookServiceCollection.findOne(query);
+      res.send(result);
+    });
+    app.patch("/bookings/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedBooking = req.body;
+      console.log(updatedBooking); 
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          status: updatedBooking.status,
+        },
+      };
+
+      const result = await BookServiceCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      res.send(result);
+    });
+
+    app.delete("/bookings/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await BookServiceCollection.deleteOne(query);
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
@@ -86,7 +120,6 @@ async function run() {
   }
 }
 run().catch(console.dir);
-// *********mongodb code end  *********//
 
 app.get("/", (req, res) => {
   res.send("Hello World! from server");
