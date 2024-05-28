@@ -73,7 +73,7 @@ async function run() {
         };
       }
       const result = await BookServiceCollection.find().toArray();
-      res.send(result);
+      res.send(result); 
     });
 
     app.get("/bookings/:id", async (req, res) => {
@@ -86,7 +86,7 @@ async function run() {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updatedBooking = req.body;
-      console.log(updatedBooking); 
+      console.log(updatedBooking);
       const options = { upsert: true };
       const updateDoc = {
         $set: {
