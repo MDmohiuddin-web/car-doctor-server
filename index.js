@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
@@ -14,7 +15,6 @@ app.use(express.json());
 console.log(
   `server DB_username = ${process.env.DB_username} server DB_password = ${process.env.DB_password}`
 );
-// const uri = "mongodb+srv://car-Docter:kgF3fXhIVnrfHUVZ@cluster0.cg8xo0z.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 const uri = `mongodb+srv://${process.env.DB_username}:${process.env.DB_password}@cluster0.cg8xo0z.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -35,6 +35,15 @@ async function run() {
     const BookServiceCollection = client
       .db("Car-Doctor")
       .collection("bookings");
+
+      //auth related api
+      app.post("/jwt",async (req,res)=>{
+        const user = req.body;
+        console.log(user);
+        const token=jwt.sign(user,process.env.ACCESS_KEY, {expiresIn:'1h'});
+        console.log(token);
+        res.send({token})
+      })
 
     app.get("/services", async (req, res) => {
       const result = await serviceCollection.find().toArray();
