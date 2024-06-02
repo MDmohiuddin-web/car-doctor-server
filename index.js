@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
@@ -8,8 +9,14 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 //middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:4000"], 
+    credentials: true,
+  }) 
+);
 app.use(express.json());
+app.use(cookieParser());
 
 // ************* mongodb code start ***********//
 console.log(
@@ -26,8 +33,32 @@ const client = new MongoClient(uri, {
   },
 });
 
+//middleware
+const logger=async (req,res,next)=>{
+    console.log("request made",req.host,req.originalUrl);
+    // console.log("request made",req.method,req.url);
+    next();
+
+}
+const verifyToken=async (req,res,next)=>{
+    const token=req.cookies["token"];
+    if(!token){
+        return res.status(401).send("unauthorized");
+    }
+    jwt.verify(token,process.env.ACCESS_KEY,(err,user)=>{
+        if(err){
+          console.log(err);
+            return res.status(401).send({message:"unauthorized"} );
+        }
+        console.log('value in the token',decoded);
+        req.user=decoded;
+        next();
+    })
+    
+} 
+
 async function run() {
-  try {
+  try { 
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
     //serviceCollection data base name is Car-Doctor
@@ -36,17 +67,25 @@ async function run() {
       .db("Car-Doctor")
       .collection("bookings");
 
-      //auth related api
-      app.post("/jwt",async (req,res)=>{
-        const user = req.body;
-        console.log(user);
-        const token=jwt.sign(user,process.env.ACCESS_KEY, {expiresIn:'1h'});
-        console.log(token);
-        res.send({token})
-      })
+    //auth related api
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      console.log(user);
+      const token = jwt.sign(user, process.env.ACCESS_KEY, { expiresIn: "1h" }); 
+      console.log(token) 
+
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: false, 
+          sameSite: "none", 
+          // maxAge: 3600000,
+        })
+        .send({ success: true });
+    });
 
     app.get("/services", async (req, res) => {
-      const result = await serviceCollection.find().toArray();
+      const result = await serviceCollection.find().toArray(); 
       res.send(result);
     });
 
@@ -75,15 +114,17 @@ async function run() {
 
     app.get("/bookings", async (req, res) => {
       console.log(req.query.email);
+      console.log("cookies", req.cookies.token); 
       let query = {};
       if (req.query?.email) {
         query = {
           email: req.query.email,
         };
       }
-      const result = await BookServiceCollection.find().toArray();
-      res.send(result); 
+      const result = await BookServiceCollection.find(query).toArray();
+      res.send(result);
     });
+    
 
     app.get("/bookings/:id", async (req, res) => {
       const id = req.params.id;
@@ -92,7 +133,7 @@ async function run() {
       res.send(result);
     });
     app.patch("/bookings/:id", async (req, res) => {
-      const id = req.params.id;
+      const id = req.params.id; 
       const filter = { _id: new ObjectId(id) };
       const updatedBooking = req.body;
       console.log(updatedBooking);
@@ -120,9 +161,7 @@ async function run() {
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    console.log("You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
