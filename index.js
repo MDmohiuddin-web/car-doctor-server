@@ -13,13 +13,13 @@ app.use(
   cors({
     origin: ["http://localhost:4000"], 
     credentials: true,
-  }) 
+  })
 );
 app.use(express.json());
 app.use(cookieParser());
 
 // ************* mongodb code start ***********//
-console.log(
+console.log( 
   `server DB_username = ${process.env.DB_username} server DB_password = ${process.env.DB_password}`
 );
 const uri = `mongodb+srv://${process.env.DB_username}:${process.env.DB_password}@cluster0.cg8xo0z.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -34,31 +34,29 @@ const client = new MongoClient(uri, {
 });
 
 //middleware
-const logger=async (req,res,next)=>{
-    console.log("request made",req.host,req.originalUrl);
-    // console.log("request made",req.method,req.url);
-    next();
-
-}
-const verifyToken=async (req,res,next)=>{
-    const token=req.cookies["token"];
-    if(!token){
-        return res.status(401).send("unauthorized");
+const logger = async (req, res, next) => {
+  console.log("request made", req.host, req.originalUrl);
+  // console.log("request made",req.method,req.url);
+  next();
+};
+const verifyToken = async (req, res, next) => {
+  const token = req.cookies["token"];
+  if (!token) {
+    return res.status(401).send("unauthorized");
+  }
+  jwt.verify(token, process.env.ACCESS_KEY, (err, user) => {
+    if (err) {
+      console.log(err);
+      return res.status(401).send({ message: "unauthorized" });
     }
-    jwt.verify(token,process.env.ACCESS_KEY,(err,user)=>{
-        if(err){
-          console.log(err);
-            return res.status(401).send({message:"unauthorized"} );
-        }
-        console.log('value in the token',decoded);
-        req.user=decoded;
-        next();
-    })
-    
-} 
+    console.log("value in the token", decoded);
+    req.user = decoded;
+    next();
+  });
+};
 
 async function run() {
-  try { 
+  try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
     //serviceCollection data base name is Car-Doctor
@@ -68,24 +66,56 @@ async function run() {
       .collection("bookings");
 
     //auth related api
-    app.post("/jwt", async (req, res) => {
+    // app.post("/jwt", async (req, res) => {
+    //   try {
+    //     const user = req.body;
+    //     console.log(user);
+    //     const token = jwt.sign(user, process.env.ACCESS_KEY, { expiresIn: "1h" });
+    //     console.log(token);
+
+    //     res
+    //       .cookie("token", token, {
+    //         httpOnly: true,
+    //         secure: false,
+    //         sameSite: "none",
+    //         // maxAge: 3600000,
+    //       })
+    //       .send({ success: true });
+
+    //
+    // app.post('/jwt', async (req, res) => {
+    //   const user = req.body
+    //   const token = jwt.sign(user, process.env.ACCESS_KEY, {
+    //   expiresIn: '365d',
+    //   })
+    //   res
+    //   .cookie('token', token, {
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === 'production',
+    //   sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+    //   })
+    //   .send({ success: true })
+    //   })
+
+    app.post("/jwt", logger, async (req, res) => {
       const user = req.body;
-      console.log(user);
-      const token = jwt.sign(user, process.env.ACCESS_KEY, { expiresIn: "1h" }); 
-      console.log(token) 
+      console.log("user for token", user);
+      const token = jwt.sign(user, process.env.ACCESS_KEY, { 
+        expiresIn: "1h",
+      });
 
       res
         .cookie("token", token, {
           httpOnly: true,
-          secure: false, 
-          sameSite: "none", 
-          // maxAge: 3600000,
-        })
-        .send({ success: true });
-    });
+          secure: true, 
+          sameSite: "none",
+        })  
+        .send({ success: true });      
+    })
+    
 
     app.get("/services", async (req, res) => {
-      const result = await serviceCollection.find().toArray(); 
+      const result = await serviceCollection.find().toArray();
       res.send(result);
     });
 
@@ -114,7 +144,7 @@ async function run() {
 
     app.get("/bookings", async (req, res) => {
       console.log(req.query.email);
-      console.log("cookies", req.cookies.token); 
+      console.log("cookies", req.cookies.token);
       let query = {};
       if (req.query?.email) {
         query = {
@@ -124,7 +154,6 @@ async function run() {
       const result = await BookServiceCollection.find(query).toArray();
       res.send(result);
     });
-    
 
     app.get("/bookings/:id", async (req, res) => {
       const id = req.params.id;
@@ -133,7 +162,7 @@ async function run() {
       res.send(result);
     });
     app.patch("/bookings/:id", async (req, res) => {
-      const id = req.params.id; 
+      const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updatedBooking = req.body;
       console.log(updatedBooking);
