@@ -1,0 +1,38 @@
+Cart
+
+GET 
+/cart: Retrieve all cart items.
+
+app.get('/carts', async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const result = await cartCollection.find(query).toArray();
+      res.send(result);
+    });
+POST 
+
+/cart: insert into all cart collection.
+
+ app.post('/carts', async (req, res) => {
+     const cartItem = req.body;
+     const result = await cartCollection.insertOne(cartItem);
+     res.send(result);
+   });
+DELETE 
+/cart: Delete a specific cart item from cart collection.
+
+ app.delete('/carts/:id', async (req, res) => {
+     const id = req.params.id;
+     const query = { _id: new ObjectId(id) }
+     const result = await cartCollection.deleteOne(query);
+     res.send(result);
+   })
+
+Menu
+
+GET /menu: Retrieve all menu items.
+
+app.get('/menu', async (req, res) => {
+    const result = await menuCollection.find().toArray();
+    res.send(result);
+});
