@@ -11,17 +11,21 @@ const port = process.env.PORT || 3000;
 //middleware
 app.use(
   cors({
-    origin: ["http://localhost:4000"], 
+    origin: [
+      "http://localhost:4001",
+      "https://car-doctor-f2b63.web.app",
+      "https://car-doctor-f2b63.firebaseapp.com",
+    ],
     credentials: true,
   })
 );
-app.use(express.json());
+app.use(express.json()); 
 app.use(cookieParser());
 
 // ************* mongodb code start ***********//
-console.log( 
-  `server DB_username = ${process.env.DB_username} server DB_password = ${process.env.DB_password}`
-);
+// console.log(
+//   `server DB_username = ${process.env.DB_username} server DB_password = ${process.env.DB_password}`
+// );
 const uri = `mongodb+srv://${process.env.DB_username}:${process.env.DB_password}@cluster0.cg8xo0z.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -58,7 +62,7 @@ const verifyToken = async (req, res, next) => {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
     //serviceCollection data base name is Car-Doctor
     const serviceCollection = client.db("Car-Doctor").collection("services");
     const BookServiceCollection = client
@@ -66,53 +70,23 @@ async function run() {
       .collection("bookings");
 
     //auth related api
-    // app.post("/jwt", async (req, res) => {
-    //   try {
-    //     const user = req.body;
-    //     console.log(user);
-    //     const token = jwt.sign(user, process.env.ACCESS_KEY, { expiresIn: "1h" });
-    //     console.log(token);
-
-    //     res
-    //       .cookie("token", token, {
-    //         httpOnly: true,
-    //         secure: false,
-    //         sameSite: "none",
-    //         // maxAge: 3600000,
-    //       })
-    //       .send({ success: true });
-
-    //
-    // app.post('/jwt', async (req, res) => {
-    //   const user = req.body
-    //   const token = jwt.sign(user, process.env.ACCESS_KEY, {
-    //   expiresIn: '365d',
-    //   })
-    //   res
-    //   .cookie('token', token, {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === 'production',
-    //   sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-    //   })
-    //   .send({ success: true })
-    //   })
+   
 
     app.post("/jwt", logger, async (req, res) => {
       const user = req.body;
       console.log("user for token", user);
-      const token = jwt.sign(user, process.env.ACCESS_KEY, { 
+      const token = jwt.sign(user, process.env.ACCESS_KEY, {
         expiresIn: "1h",
       });
 
       res
         .cookie("token", token, {
           httpOnly: true,
-          secure: true, 
+          secure: true,
           sameSite: "none",
-        })  
-        .send({ success: true });      
-    })
-    
+        })
+        .send({ success: true });
+    });
 
     app.get("/services", async (req, res) => {
       const result = await serviceCollection.find().toArray();
@@ -189,7 +163,7 @@ async function run() {
     });
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log("You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
